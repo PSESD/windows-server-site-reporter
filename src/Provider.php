@@ -44,16 +44,24 @@ class Provider
 			}
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, $push['url']);
+			// curl_setopt($ch, CURLOPT_HEADER, true);
+			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			curl_setopt($ch, CURLOPT_POST, 1);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); 
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
 			//execute post
 			$result = $rawResult = curl_exec($ch);
+			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$error = false;
+			if ($httpCode !== 200) {
+				$error = curl_error($ch);
+			}
 			if (substr($result, 0, 1) === '{' && ($result = json_decode($result, true)) && !empty($result['status']) && $result['status'] === 'accepted') {
 				// $this->log("Push to {$push['url']} succeeded");
 			} else {
-				$this->log("Push to {$push['url']} failed ({$rawResult})");
+				$this->log("Push to {$push['url']} failed ({$httpCode}, {$rawResult}, {$error})");
 				$errors = true;
 			}
 			//close connection

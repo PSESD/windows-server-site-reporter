@@ -7,7 +7,7 @@
   <Triggers>
     <CalendarTrigger>
       <Repetition>
-        <Interval>PT30M</Interval>
+        <Interval>PT5M</Interval>
         <Duration>P1D</Duration>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
@@ -46,7 +46,7 @@
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>D:\Apps\PHP-5.6.0\php.exe</Command>
+      <Command>D:\Apps\PHP-5.5.5\php.exe</Command>
       <Arguments>push.php</Arguments>
       <WorkingDirectory>D:\Apps\SensorProvider\cmds</WorkingDirectory>
     </Exec>
