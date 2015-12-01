@@ -44,24 +44,16 @@ class Provider
 			}
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, $push['url']);
-			// curl_setopt($ch, CURLOPT_HEADER, true);
-			curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 			curl_setopt($ch, CURLOPT_POST, 1);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); 
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
 			//execute post
 			$result = $rawResult = curl_exec($ch);
-			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$error = false;
-			if ($httpCode !== 200) {
-				$error = curl_error($ch);
-			}
 			if (substr($result, 0, 1) === '{' && ($result = json_decode($result, true)) && !empty($result['status']) && $result['status'] === 'accepted') {
 				// $this->log("Push to {$push['url']} succeeded");
 			} else {
-				$this->log("Push to {$push['url']} failed ({$httpCode}, {$rawResult}, {$error})");
+				$this->log("Push to {$push['url']} failed ({$rawResult})");
 				$errors = true;
 			}
 			//close connection
@@ -70,6 +62,36 @@ class Provider
 		return !$errors;
 	}
 
+	public function getLocalSensorData()
+	{
+		$sensors = [];
+		$sensors['disk-space-C'] = $this->getDiskSpaceSensor('C');
+		$sensors['disk-space-D'] = $this->getDiskSpaceSensor('D');
+		return $sensors;
+	}
+
+	protected function getDiskSpaceSensor($drive)
+	{
+		$sensor = [
+			'class' => 'canis\sensors\local\Dynamic',
+			'id' => 'disk-space-' . $drive,
+			'name' => 'Disk Space on ' . $drive
+		];
+		$payload = [];
+		$totalSpace = disk_total_space($drive .':');
+		$freeSpace = disk_free_space($drive .':');
+		$freePercent = ($freeSpace/$totalSpace)*100;
+		if ($freePercent < 15) {
+			$payload['state'] = 'low';
+		} else {
+			$payload['state'] = 'normal';
+		}
+		$payload['total'] = $totalSpace;
+		$payload['free'] = $freeSpace;
+		$payload['dataValue'] = round($freePercent, 1);
+		$sensor['payload'] = $payload;
+		return $sensor;
+	}
 	public function getData($isPush = false)
 	{
 		$data = ['timestamp' => time(), 'earliestNextCheck' => time(), 'provider' => null];
@@ -95,7 +117,7 @@ class Provider
 			'meta' => [],
 			'resources' => [],
 			'services' => [],
-			'sensors' => []
+			'sensors' => $this->getLocalSensorData()
 		];
 		$data['provider']['servers']['self']['meta']['PHP Version'] = phpversion();
 
