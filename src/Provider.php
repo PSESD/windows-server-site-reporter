@@ -75,7 +75,8 @@ class Provider
 		$sensor = [
 			'class' => 'canis\sensors\local\Dynamic',
 			'id' => 'disk-space-' . $drive,
-			'name' => 'Disk Space on ' . $drive
+			'name' => 'Disk Space on ' . $drive,
+			'dataValuePostfix' => '%'
 		];
 		$payload = [];
 		$totalSpace = disk_total_space($drive .':');
