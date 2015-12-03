@@ -75,7 +75,7 @@ class Provider
 	protected function getDiskSpaceSensor($drive)
 	{
 		$sensor = [
-			'class' => 'canis\sensors\local\Dynamic',
+			'class' => 'canis\sensors\local\DynamicData',
 			'id' => 'disk-space-' . $drive,
 			'name' => 'Free Disk Space on ' . $drive,
 			'dataValuePostfix' => '%'
@@ -89,12 +89,13 @@ class Provider
 		} else {
 			$payload['state'] = 'normal';
 		}
-		$payload['total'] = $totalSpace;
-		$payload['free'] = $freeSpace;
+		// $payload['total'] = $totalSpace;
+		// $payload['free'] = $freeSpace;
 		$payload['dataValue'] = round($freePercent, 1);
 		$sensor['payload'] = $payload;
 		return $sensor;
 	}
+	
 	public function getData($isPush = false)
 	{
 		$data = ['timestamp' => time(), 'earliestNextCheck' => time(), 'provider' => null];
