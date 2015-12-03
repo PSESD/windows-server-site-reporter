@@ -95,7 +95,7 @@ class Provider
 		$sensor['payload'] = $payload;
 		return $sensor;
 	}
-	
+
 	public function getData($isPush = false)
 	{
 		$data = ['timestamp' => time(), 'earliestNextCheck' => time(), 'provider' => null];
@@ -198,14 +198,35 @@ class Provider
 							$serviceConfig['objectType'] = 'server';
 							$serviceConfig['resourceReferences'] = [];
 							if (!empty($binding['certificate'])) {
-								$id = 'certificate.'.md5($binding['certificate']['cn'].$binding['certificate']['startDate']);
+								$id = 'certificate.'.$binding['certificate']['id'];
 								if (!isset($data['provider']['servers']['self']['resources'][$id])) {
-									$data['provider']['servers']['self']['resourceReferences'][$id] = [
+									$certificateState = 'normal';
+									$certificateExpires = strtotime($binding['certificate']['validTo']);
+									$certificateInDanger = strtotime("+1 month");
+									if ($certificateExpires < $certificateInDanger) {
+										$certificateState = 'error';
+									}
+									$sensor = [
+										'class' => 'canis\sensors\local\CertificateExpiration',
+										'id' => 'certificate-expiration',
+										'name' => 'Certificate Expiration',
+										'payload' => [
+											'state' => $certificateState,
+											'expireDate' => $binding['certificate']['validTo']
+										]
+									]; 
+									$data['provider']['servers']['self']['resources'][$id] = [
 										'class' => 'canis\sensors\resources\Certificate',
 										'id' => $id,
-										'name' => $binding['certificate']['cn'],
-										'startDate' => $binding['certificate']['startDate'],
-										'expirationDate' => $binding['certificate']['expirationDate']
+										'name' => $binding['certificate']['name'],
+										'meta' => [
+											'Issuer' => $binding['certificate']['issuer'],
+											'Issue Date' => date("F j, Y g:i:sa T", strtotime($binding['certificate']['validFrom'])),
+											'Expiration Date' => date("F j, Y g:i:sa T", strtotime($binding['certificate']['validTo'])),
+										],
+										'sensors' => [
+											'certificate-expiration' => $sensor
+										]
 									];
 								}
 								$serviceConfig['resourceReferences'][] = [
@@ -231,6 +252,7 @@ class Provider
 							$siteConfig['serviceReferences'][$service .'-'. $n] = $serviceConfig;
 						}
 					}
+					unset($binding['certificate']);
 					if (isset($this->config['databaseServer']) && !isset($siteConfig['serviceReferences']['mysql']) && !in_array($siteConfig['class'], ['canis\sensors\sites\Static', 'canis\sensors\sites\SensorProvider'])) {
 						$siteConfig['serviceReferences']['mysql'] = [
 							'class' => 'canis\sensors\serviceReferences\ServiceConnection',

@@ -1,5 +1,15 @@
 <?php
 $config = [];
-$config['id'] = '';
-$config['keys'] = [];
+$config['id'] = 'SERVER_ID';
+$config['name'] = 'SERVER_NAME';
+$config['databaseServer'] = 'DATABASE_SERVER';
+$config['preparse'] = true;
+$config['keys'] = [
+];
+$config['push'] = [];
+$config['push'][] = [
+	'url' => 'https://site.awesome.com/provide',
+	'key' => 'KEY'
+];
+
 $config['siteConfig'] = [];

@@ -1,59 +1,25 @@
 <?php
 
 function getCertificateInformation($host) {
-	return false;
-	if($fp = tmpfile()) {
-		$ch = curl_init();
-	    curl_setopt($ch, CURLOPT_URL,"https://{$host}/");
-	    curl_setopt($ch, CURLOPT_STDERR, $fp);
-	    curl_setopt($ch, CURLOPT_CERTINFO, 1);
-	    curl_setopt($ch, CURLOPT_VERBOSE, 1);
-	    curl_setopt($ch, CURLOPT_HEADER, 1);
-	    curl_setopt($ch, CURLOPT_NOBODY, 1);
-	    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-	    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-	    $result = curl_exec($ch);
-	    curl_errno($ch)==0 or die("Error:".curl_errno($ch)." ".curl_error($ch));
-	    fseek($fp, 0);//rewind
-	    $str='';
-	    while(strlen($str.=fread($fp,8192))==8192);
-	    $lines = preg_split('/\R/', $str);
-	    $payAttention = false;
-	    $certificates = $info = [];
-	    $currentCertificate = false;
-	    echo $str;exit;
-	    foreach ($lines as $line) {
-	    	$line = trim($line);
-	    	if (substr($line, 0, 2) === "* ") {
-	    		$line = substr($line, 2);
-	    	}
-	    	if ($line === '-----BEGIN CERTIFICATE-----') {
-	    		$currentCertificate = $line . PHP_EOL;
-	    	} elseif ($currentCertificate !== false) {
-	    		if (substr($line, -1) === '*') {
-	    			$currentCertificate .= substr($line, 0, strlen($line)-1) . PHP_EOL . '-----END CERTIFICATE-----';
-	    			echo $currentCertificate;exit;
-	    			$currentCertificate = trim($currentCertificate);
-	    			$certinfo = @openssl_x509_parse($currentCertificate);
-	    			$info[] = ['id' => $certinfo['name']];
-	    			$currentCertificate = false;
-	    		}elseif ($line === '-----END CERTIFICATE-----') {
-	    			$currentCertificate .= $line;
-
-	    			$currentCertificate = trim($currentCertificate);
-	    			$certinfo = @openssl_x509_parse($currentCertificate);
-	    			$info[] = ['id' => $certinfo['name']];
-	    			$currentCertificate = false;
-	    		} else {
-	    			$currentCertificate .= $line . PHP_EOL;
-	    		}
-	    	}
-	    }
-	    var_dump($info);
-	    fclose($fp);
+	if (!($get = stream_context_create(array("ssl" => array("capture_peer_cert" => TRUE))))) { return false; }
+	stream_context_set_option($get, 'ssl', 'verify_host', false);
+	stream_context_set_option($get, 'ssl', 'verify_peer', false);
+	stream_context_set_option($get, 'ssl', 'verify_peer_name', false);
+	if (!($read = stream_socket_client("ssl://{$host}:443", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $get))) { return false; }
+	if (!($cert = stream_context_get_params($read))) { return false; }
+	if (!($parsed = openssl_x509_parse($cert["options"]["ssl"]["peer_certificate"]))) { return false; }
+	if (!isset($parsed['serialNumber']) || !isset($parsed['issuer']) || !isset($parsed['validFrom']) || !isset($parsed['validTo']) || !isset($parsed['subject'])) {
+		return false;
 	}
-	exit;
+	$certificate = [];
+	$certificate['id'] = $parsed['serialNumber'];
+	$certificate['name'] = $parsed['subject']['CN'];
+	$certificate['issuer'] = $parsed['issuer']['O'];
+	$certificate['validFrom'] = gmdate('c', $parsed['validFrom_time_t']);
+	$certificate['validTo'] = gmdate('c', $parsed['validTo_time_t']);
+	return $certificate;
 }
+
 
 $ips = [];
 $cmd = 'ipconfig /all';
@@ -132,6 +98,9 @@ foreach ($sitesXml->SITE as $item) {
 			if ($b['type'] === 'https') {
 				$b['certificate'] = false;
 				$host = $b['hostname'];
+				if (!$host && isset($site['hostnames'][0])) {
+					$host = $site['hostnames'][0];
+				}
 				if (!$host) {
 					$host = $b['ip'];
 				}
