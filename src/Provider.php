@@ -48,6 +48,8 @@ class Provider
 			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); 
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 300); 
+			curl_setopt($ch, CURLOPT_TIMEOUT, 300);
 			//execute post
 			$result = $rawResult = curl_exec($ch);
 			if (substr($result, 0, 1) === '{' && ($result = json_decode($result, true)) && !empty($result['status']) && $result['status'] === 'accepted') {
