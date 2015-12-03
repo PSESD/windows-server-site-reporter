@@ -107,7 +107,7 @@ foreach ($sitesXml->SITE as $item) {
 				if (!$host) {
 					$host = $b['ip'];
 				}
-				if ($host) {
+				if ($host && $site['state'] === 'Started') {
 					$certInfo = getCertificateInformation($host);
 					if ($certInfo) {
 						$b['certificate'] = $certInfo;
