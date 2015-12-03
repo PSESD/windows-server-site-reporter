@@ -7,6 +7,9 @@ function getCertificateInformation($host) {
 	stream_context_set_option($get, 'ssl', 'verify_peer_name', false);
 	if (!($read = stream_socket_client("ssl://{$host}:443", $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $get))) { return false; }
 	if (!($cert = stream_context_get_params($read))) { return false; }
+	if (!isset($cert["options"]["ssl"]["peer_certificate"])) {
+		return false;
+	}
 	if (!($parsed = openssl_x509_parse($cert["options"]["ssl"]["peer_certificate"]))) { return false; }
 	if (!isset($parsed['serialNumber']) || !isset($parsed['issuer']) || !isset($parsed['validFrom']) || !isset($parsed['validTo']) || !isset($parsed['subject'])) {
 		return false;
