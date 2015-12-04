@@ -189,14 +189,15 @@ class Provider
 
 					foreach ($site['services'] as $service => $bindings) {
 						$n = 0;
+						$serviceConfig = [];
+						$serviceConfig['class'] = 'canis\sensors\serviceReferences\ServiceBindings';
+						$serviceConfig['service'] = $service;
+						$serviceConfig['object'] = $this->config['id'];
+						$serviceConfig['objectType'] = 'server';
+						$serviceConfig['resourceReferences'] = [];
+						$serviceConfig['bindings'] = [];
+
 						foreach ($bindings as $binding) {
-							$n++;
-							$serviceConfig = [];
-							$serviceConfig['class'] = 'canis\sensors\serviceReferences\ServiceBinding';
-							$serviceConfig['service'] = $service;
-							$serviceConfig['object'] = $this->config['id'];
-							$serviceConfig['objectType'] = 'server';
-							$serviceConfig['resourceReferences'] = [];
 							if (!empty($binding['certificate'])) {
 								$id = 'certificate.'.$binding['certificate']['id'];
 								if (!isset($data['provider']['servers']['self']['resources'][$id])) {
@@ -229,7 +230,7 @@ class Provider
 										]
 									];
 								}
-								$serviceConfig['resourceReferences'][] = [
+								$serviceConfig['resourceReferences'][$id] = [
 									'class' => 'canis\sensors\resourceReferences\SharedResource',
 									'object' => $this->config['id'],
 									'objectType' => 'server',
@@ -246,11 +247,11 @@ class Provider
 								$reference['resource'] = 'ip.'.$binding['ip'];
 								$reference['object'] = $this->config['id'];
 								$reference['objectType'] = 'server';
-								$serviceConfig['resourceReferences'][] = $reference;
+								$serviceConfig['resourceReferences'][$reference['resource']] = $reference;
 							}
-							$serviceConfig['binding'] = $binding;
-							$siteConfig['serviceReferences'][$service .'-'. $n] = $serviceConfig;
+							$serviceConfig['bindings'][] = $binding;
 						}
+						$siteConfig['serviceReferences'][$service] = $serviceConfig;
 					}
 					unset($binding['certificate']);
 					if (isset($this->config['databaseServer']) && !isset($siteConfig['serviceReferences']['mysql']) && !in_array($siteConfig['class'], ['canis\sensors\sites\Static', 'canis\sensors\sites\SensorProvider'])) {
