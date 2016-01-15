@@ -75,7 +75,7 @@ class Provider
 	protected function getDiskSpaceSensor($drive)
 	{
 		$sensor = [
-			'class' => 'canis\sensors\local\DynamicData',
+			'class' => 'psesd\sensors\local\DynamicData',
 			'id' => 'disk-space-' . $drive,
 			'name' => 'Free Disk Space on ' . $drive,
 			'dataValuePostfix' => '%'
@@ -101,9 +101,9 @@ class Provider
 		$data = ['timestamp' => time(), 'earliestNextCheck' => time(), 'provider' => null];
 		$data['earliestNextCheck'] = time() + 60;
 		if ($isPush) {
-			$providerClass = 'canis\sensors\providers\PushProvider';
+			$providerClass = 'psesd\sensors\providers\PushProvider';
 		} else { 
-			$providerClass = 'canis\sensors\providers\PullProvider';
+			$providerClass = 'psesd\sensors\providers\PullProvider';
 		}
 		$data['provider'] = [
 			'class' => $providerClass,
@@ -115,7 +115,7 @@ class Provider
 		];
 
 		$data['provider']['servers']['self'] = [
-			'class' => 'canis\sensors\servers\WindowsServer',
+			'class' => 'psesd\sensors\servers\WindowsServer',
 			'id' => $this->config['id'],
 			'name' => $this->config['name'],
 			'meta' => [],
@@ -126,10 +126,10 @@ class Provider
 		$data['provider']['servers']['self']['meta']['PHP Version'] = phpversion();
 
 		$data['provider']['servers']['self']['services']['http'] = [
-			'class' => 'canis\sensors\services\HttpService'
+			'class' => 'psesd\sensors\services\HttpService'
 		];
 		$data['provider']['servers']['self']['services']['https'] = [
-			'class' => 'canis\sensors\services\HttpsService'
+			'class' => 'psesd\sensors\services\HttpsService'
 		];
 
 		$filePath = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'sites.json';
@@ -139,7 +139,7 @@ class Provider
 			if (isset($sites['ips'])) {
 				foreach ($sites['ips'] as $ip) {
 					$data['provider']['servers']['self']['resources'][] = [
-						'class' => 'canis\sensors\resources\IP',
+						'class' => 'psesd\sensors\resources\IP',
 						'ip' => $ip
 					];
 				}
@@ -175,7 +175,7 @@ class Provider
 						$id = md5($this->config['id'] .'.'. $site['id']);
 					}
 					$siteConfig = array_merge([
-						'class' => 'canis\sensors\sites\\' . $type,
+						'class' => 'psesd\sensors\sites\\' . $type,
 						'id' => $id,
 						'name' => $site['name'],
 						'url' => $site['url'],
@@ -190,7 +190,7 @@ class Provider
 					foreach ($site['services'] as $service => $bindings) {
 						$n = 0;
 						$serviceConfig = [];
-						$serviceConfig['class'] = 'canis\sensors\serviceReferences\ServiceBindings';
+						$serviceConfig['class'] = 'psesd\sensors\serviceReferences\ServiceBindings';
 						$serviceConfig['service'] = $service;
 						$serviceConfig['object'] = $this->config['id'];
 						$serviceConfig['objectType'] = 'server';
@@ -208,7 +208,7 @@ class Provider
 										$certificateState = 'error';
 									}
 									$sensor = [
-										'class' => 'canis\sensors\local\CertificateExpiration',
+										'class' => 'psesd\sensors\local\CertificateExpiration',
 										'id' => 'certificate-expiration',
 										'name' => 'Certificate Expiration',
 										'payload' => [
@@ -217,7 +217,7 @@ class Provider
 										]
 									]; 
 									$data['provider']['servers']['self']['resources'][$id] = [
-										'class' => 'canis\sensors\resources\Certificate',
+										'class' => 'psesd\sensors\resources\Certificate',
 										'id' => $id,
 										'name' => $binding['certificate']['name'],
 										'meta' => [
@@ -231,7 +231,7 @@ class Provider
 									];
 								}
 								$serviceConfig['resourceReferences'][$id] = [
-									'class' => 'canis\sensors\resourceReferences\SharedResource',
+									'class' => 'psesd\sensors\resourceReferences\SharedResource',
 									'object' => $this->config['id'],
 									'objectType' => 'server',
 									'resource' => $id
@@ -240,9 +240,9 @@ class Provider
 							if (!empty($binding['ip'])) {
 								$reference = [];
 								if ($binding['type'] === 'https') {
-									$reference['class'] = 'canis\sensors\resourceReferences\DedicatedResource';
+									$reference['class'] = 'psesd\sensors\resourceReferences\DedicatedResource';
 								} else {
-									$reference['class'] = 'canis\sensors\resourceReferences\SharedResource';
+									$reference['class'] = 'psesd\sensors\resourceReferences\SharedResource';
 								}
 								$reference['resource'] = 'ip.'.$binding['ip'];
 								$reference['object'] = $this->config['id'];
@@ -254,9 +254,9 @@ class Provider
 						$siteConfig['serviceReferences'][$service] = $serviceConfig;
 					}
 					unset($binding['certificate']);
-					if (isset($this->config['databaseServer']) && !isset($siteConfig['serviceReferences']['mysql']) && !in_array($siteConfig['class'], ['canis\sensors\sites\Static', 'canis\sensors\sites\SensorProvider'])) {
+					if (isset($this->config['databaseServer']) && !isset($siteConfig['serviceReferences']['mysql']) && !in_array($siteConfig['class'], ['psesd\sensors\sites\Static', 'psesd\sensors\sites\SensorProvider'])) {
 						$siteConfig['serviceReferences']['mysql'] = [
-							'class' => 'canis\sensors\serviceReferences\ServiceConnection',
+							'class' => 'psesd\sensors\serviceReferences\ServiceConnection',
 							'object' => $this->config['databaseServer'],
 							'objectType' => 'server',
 							'name' => 'Database',
