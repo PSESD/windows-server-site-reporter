@@ -42,24 +42,35 @@ class Provider
 			if (!empty($push['key'])) {
 				$headers[] = 'X-Api-Key: ' . $push['key'];
 			}
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, $push['url']);
-			curl_setopt($ch, CURLOPT_POST, 1);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); 
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 300); 
-			curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-			//execute post
-			$result = $rawResult = curl_exec($ch);
-			if (substr($result, 0, 1) === '{' && ($result = json_decode($result, true)) && !empty($result['status']) && $result['status'] === 'accepted') {
-				// $this->log("Push to {$push['url']} succeeded");
-			} else {
+			$attemptsLeft = 3;
+			$success = false;
+			while (!$success && $attemptsLeft > 0) {
+				echo "Attempting to send...\n";
+				$attemptsLeft--;
+				$ch = curl_init();
+				curl_setopt($ch, CURLOPT_URL, $push['url']);
+				curl_setopt($ch, CURLOPT_POST, 1);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); 
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+				curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+				curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30); 
+				curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+				//execute post
+				$result = $rawResult = curl_exec($ch);
+				if (substr($result, 0, 1) === '{' && ($result = json_decode($result, true)) && !empty($result['status']) && $result['status'] === 'accepted') {
+					// $this->log("Push to {$push['url']} succeeded");
+					$success = true;
+					break;
+				} else {
+					sleep(5);
+				}
+				//close connection
+				curl_close($ch);
+			}
+			if (!$success) {
 				$this->log("Push to {$push['url']} failed ({$rawResult})");
 				$errors = true;
 			}
-			//close connection
-			curl_close($ch);
 		}
 		return !$errors;
 	}
